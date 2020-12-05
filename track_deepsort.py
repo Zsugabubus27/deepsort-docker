@@ -79,7 +79,7 @@ class Detector(object):
 	def closeVideoOutput(self):
 		if self.input_images_dir is None or self.output_video_path is None:
 			return
-		self.output.release()()
+		self.output.release()
 
 	def doTrackingOnDetectionFile(self):
 		'''
@@ -101,9 +101,10 @@ class Detector(object):
 		
 		self.initVideoOutput()
 
-		for frameNum, list_dets in dict_detections.items():
+		for frameNum in sorted(dict_detections.keys()):
 			if (frameNum % stepFrame) != 0:
 				continue
+			list_dets = dict_detections[frameNum]
 			print('Frame', frameNum)
 			self.doTrackingForOneFrame(frameNum, list_dets)
 			if frameNum >= 1800:
