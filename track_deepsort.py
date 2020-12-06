@@ -16,12 +16,14 @@ class Detector(object):
 	def __init__(self, detections_file : str, resolution : tuple, fps : int, input_images_dir : str, 
 				output_video_path : str, output_result_path : str, use_cuda : bool, lambdaParam : float,
 				max_dist : float, min_confidence : float, nms_max_overlap : float,max_iou_distance : float, 
-				max_age : int, n_init : int, nn_budget : int, model_path = 'deep_sort/deep/checkpoint/ckpt.t7'):
+				max_age : int, n_init : int, nn_budget : int, model_path = 'deep_sort/deep/checkpoint/ckpt.t7',
+				early_stopping = None):
 		
 		self.detections_file = detections_file # A pickle fájl amiben az összes detekció benne van
 		self.input_images_dir = input_images_dir # A mappa ahol a 2.5K-s képek vannak {frameNum}.jpg formátumban
 		self.output_video_path = output_video_path # Ahova a vizualizálandó videót mentem
 		self.output_result_path = output_result_path # Ahová a kimenetet mentem CSV formátumba
+		self.early_stopping = early_stopping
 		
 		assert self.output_result_path is not None and self.detections_file is not None
 		
@@ -66,7 +68,7 @@ class Detector(object):
 		# Trackeket rajzolok rá
 		if len(tracks) > 0:
 			bbox_xyxy = tracks[:, :4]
-			identities = tracks[:, -1]
+			identities = tracks[:, 4]
 			img = draw_bboxes(img, bbox_xyxy, identities)
 
 		self.out_vid_height, self.out_vid_width
@@ -80,6 +82,26 @@ class Detector(object):
 		if self.input_images_dir is None or self.output_video_path is None:
 			return
 		self.output.release()
+	
+	def writeResults(self, frameNum, tracks):
+		'''
+		tracks : np.array = List[ [x1, y1, x2, y2, tID, xWorld, yWorld] ]
+		'''
+		if len(tracks) == 0:
+			return
+		
+		# worldCoordXY = self.myCoordMapper.image2xy([ [(track[0] + track[2]) / 2, track[3]] for track in tracks ])
+		#assert any([False if x is not None else True for x in worldCoordXY])
+		# print('.'*50)
+		# print(worldCoordXY)
+		list_tracks = [ {'frame' : frameNum, 'xTL' : xTL, 'yTL' : yTL, 'xBR' : xBR, 
+							'yBR' : yBR, 'tID' : tID, 'xWorld' : xWorld, 'yWorld' : yWorld}
+						for xTL, yTL, xBR, yBR, tID, xWorld, yWorld
+						in tracks
+						]
+	
+		pd.DataFrame(list_tracks).to_csv(self.output_result_path, mode='a', index=None, 
+											header=(not os.path.exists(self.output_result_path)))
 
 	def doTrackingOnDetectionFile(self):
 		'''
@@ -107,7 +129,8 @@ class Detector(object):
 			list_dets = dict_detections[frameNum]
 			print('Frame', frameNum)
 			self.doTrackingForOneFrame(frameNum, list_dets)
-			if frameNum >= 1800:
+			
+			if self.early_stopping is not None and frameNum >= self.early_stopping:
 				break
 
 		# Végül bezárom a videót ha van
@@ -128,14 +151,13 @@ class Detector(object):
 		cls_conf = [det['score'] for det in list_of_detections]
 		bbox_imgs = [det['image'] for det in list_of_detections]
 		worldCoordXY = [det['worldXY'] for det in list_of_detections]
-		
-		#print(bbox_xcycwh, cls_conf, worldCoordXY)
-
 
 		outputs, deadtracks = self.deepsort.update(bbox_xcycwh, cls_conf, bbox_imgs, worldCoordXY)
 
 		self.writeVideoOutput(frameNum, list_of_detections, outputs)
 		
+		self.writeResults(frameNum, outputs)
+
 		# TODO: Save results to file
 		# Úgy ahogy a workernél a pandasos mókát csináltam
 
@@ -165,23 +187,24 @@ if __name__ == "__main__":
 	# 	with Detector(args) as det:
 	# 		det.detect()
 
+	# DeepSort paraméterek
+	use_cuda = False
+	lambdaParam  = 1.0
+	max_dist = 1.0
+	min_confidence = 0.0 # Fölösleges, mert a detekció során már megcsináltam
+	nms_max_overlap = 1.1 # Fölösleges, mert már a detekció során mindent kiszűrtem
+	max_iou_distance = 0.7
+	max_age = fps*3
+	n_init = 3
+	nn_budget = 50
+
 	# Mérési paraméterek
+	early_stopping = 30*60 # sec * 60FPS
 	fps = 10
 	resolution = (2560, 1440) # TODO: Okossabban 
 	detections_file = f'/mnt/match_videos/dobreff/detections/{resolution[0]}_30fps/detections.pickle' # TODO: Okosabban
 	output_video_path = f'/mnt/match_videos/dobreff/outputs/{resolution[0]}_{fps}.avi' 
 	output_result_path = f'/mnt/match_videos/dobreff/outputs/{resolution[0]}_{fps}.csv'
-	
-	# DeepSort paraméterek
-	use_cuda = False
-	lambdaParam  = 0.6
-	max_dist = 1.0
-	min_confidence = 0.1
-	nms_max_overlap = 0.7
-	max_iou_distance = 0.7
-	max_age = fps*3
-	n_init = 3
-	nn_budget = 50
 	
 	# Konstans paraméterek
 	model_path = 'deep_sort/deep/checkpoint/ckpt.t7'
@@ -191,6 +214,6 @@ if __name__ == "__main__":
 						output_video_path=output_video_path, output_result_path=output_result_path, use_cuda=use_cuda,
 						lambdaParam=lambdaParam, max_dist=max_dist, min_confidence=min_confidence, 
 						nms_max_overlap=nms_max_overlap, max_iou_distance=max_iou_distance, max_age=max_age, 
-						n_init=n_init, nn_budget=nn_budget, model_path=model_path)
+						n_init=n_init, nn_budget=nn_budget, model_path=model_path, early_stopping=early_stopping)
 	
 	myTracker.doTrackingOnDetectionFile()

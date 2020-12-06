@@ -23,7 +23,11 @@ class DeepSort(object):
 			nn_budget : int
 				Size of the array that stores the feature vectors of tracks. Lk in paper.
 			max_iou_distance : int
-				TODO
+				Miután appearance és KF alapján matcheltük a trackeket és a detectionöket, 
+				maradnak olyan detectionök és trackek amiket nem matcheltünk.
+				Ekkor az olyan nem matchelt trackeket amik 1 idősek VAGY unconfirmedek (újak) 
+				és a maradék detectiont IOU távolság alapján matchelünk.
+				Maximum ilyen messze lehetnek egymástól.
 			n_init : int
 				Number of consecutive detections before the track is confirmed. The
 				track state is set to `Deleted` if a miss occurs within the first
@@ -31,7 +35,12 @@ class DeepSort(object):
 			lambdaParam : int
 				TODO
 			max_dist : int
-				TODO
+				Appearance feature vectorok távolságának maximuma.
+				Minden trackhez kiszámoljuk, hogy a detekciók közül melyik hasonlít rá a legjobban.
+				Ezt a track összes! Mind az {nn_budget} darab képéhez nézzük. 
+				És a sok kép (history) közül a leghasonlóbb távolságát adja a track[i] - detections[j] távolságaként.
+				Azokat a párosokat ahol ezen {max_dist}-nél nagyobb a távolság "végtelennel" helyettesíti.
+				Ha ez 1.0 akkor semmit se helyettesít végtelennel
 			resolution : tuple(width, height)
 				Resolution of the video! Not 2560x1440 but 5120x1440
 		'''
@@ -69,6 +78,7 @@ class DeepSort(object):
 		bbox_tlwh = self._xywh_to_tlwh(np.array(bbox_xywh))
 		detections = [Detection(tlwh, conf, feat, worldXY) for tlwh, conf, feat, worldXY in 
 						zip(bbox_tlwh, confidences, features, worldCoordXY) if conf > self.min_confidence]
+		assert len(detections) == len(worldCoordXY), f'Min-confidence {self.min_confidence} fucks it up'
 
 		# run on non-maximum supression
 		# 1. Creates a list of the TopLeftWH coordinates of BBs
@@ -78,6 +88,7 @@ class DeepSort(object):
 		boxes = np.array([d.tlwh for d in detections])
 		scores = np.array([d.confidence for d in detections])
 		indices = non_max_suppression( boxes, self.nms_max_overlap, scores)
+		assert len(indices) == len(detections), f'NMS with {self.nms_max_overlap} fucks it up'
 		detections = [detections[i] for i in indices]
 
 		# update tracker
@@ -92,13 +103,15 @@ class DeepSort(object):
 			if not track.is_confirmed() or track.time_since_update >= 1:
 				box = track.to_tlwh()
 				x1,y1,x2,y2 = self._tlwh_to_xyxy(box)
+				xWorld, yWorld = track.to_worldXY()
 				track_id = str(track.track_id) + " " + str(track.time_since_update)
-				deadtracks.append([x1,y1,x2,y2,track_id])
+				deadtracks.append([x1,y1,x2,y2,track_id, xWorld, yWorld])
 				continue
 			box = track.to_tlwh()
+			xWorld, yWorld = track.to_worldXY()
 			x1,y1,x2,y2 = self._tlwh_to_xyxy(box)
 			track_id = track.track_id
-			outputs.append(np.array([x1,y1,x2,y2,track_id], dtype=np.int))
+			outputs.append(np.array([x1,y1,x2,y2,track_id, xWorld, yWorld], dtype=np.float))
 		if len(outputs) > 0:
 			outputs = np.stack(outputs,axis=0)
 		return outputs, deadtracks
