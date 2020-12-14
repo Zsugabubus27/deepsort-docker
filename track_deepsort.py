@@ -66,10 +66,10 @@ class Detector(object):
 		img = draw_bboxes(img, bb_xyxy, all1)
 
 		# Trackeket rajzolok rá
-		if len(tracks) > 0:
-			bbox_xyxy = tracks[:, :4]
-			identities = tracks[:, 4]
-			img = draw_bboxes(img, bbox_xyxy, identities)
+		# if len(tracks) > 0 and False: # TODO:
+		# 	bbox_xyxy = tracks[:, :4]
+		# 	identities = tracks[:, 4]
+		# 	img = draw_bboxes(img, bbox_xyxy, identities)
 
 		self.out_vid_height, self.out_vid_width
 		# Frame Numbert is felrajzolom
@@ -90,10 +90,6 @@ class Detector(object):
 		if len(tracks) == 0:
 			return
 		
-		# worldCoordXY = self.myCoordMapper.image2xy([ [(track[0] + track[2]) / 2, track[3]] for track in tracks ])
-		#assert any([False if x is not None else True for x in worldCoordXY])
-		# print('.'*50)
-		# print(worldCoordXY)
 		list_tracks = [ {'frame' : frameNum, 'xTL' : xTL, 'yTL' : yTL, 'xBR' : xBR, 
 							'yBR' : yBR, 'tID' : tID, 'xWorld' : xWorld, 'yWorld' : yWorld}
 						for xTL, yTL, xBR, yBR, tID, xWorld, yWorld
@@ -194,7 +190,7 @@ if __name__ == "__main__":
 	min_confidence = 0.0 # Fölösleges, mert a detekció során már megcsináltam
 	nms_max_overlap = 1.1 # Fölösleges, mert már a detekció során mindent kiszűrtem
 	max_iou_distance = 0.7
-	max_age = fps*3
+	max_age = 10*3 # FPS*3
 	n_init = 3
 	nn_budget = 50
 
@@ -202,7 +198,7 @@ if __name__ == "__main__":
 	early_stopping = 30*60 # sec * 60FPS
 	fps = 10
 	resolution = (2560, 1440) # TODO: Okossabban 
-	detections_file = f'/mnt/match_videos/dobreff/detections/{resolution[0]}_30fps/detections.pickle' # TODO: Okosabban
+	detections_file = f'/mnt/match_videos/dobreff/detections/{resolution[0]}_30fps/detections_v4.pickle' # TODO: Okosabban
 	output_video_path = f'/mnt/match_videos/dobreff/outputs/{resolution[0]}_{fps}.avi' 
 	output_result_path = f'/mnt/match_videos/dobreff/outputs/{resolution[0]}_{fps}.csv'
 	
