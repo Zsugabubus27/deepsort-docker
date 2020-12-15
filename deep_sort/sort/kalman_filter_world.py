@@ -72,7 +72,7 @@ class KalmanFilterWorldCoordinate(object):
                 else:
                     return retDf[['error', 'height_error', 'aspectRatio_error']].mean().values
         elif self.inputVideo == 'CSG':
-            dist_from_cam = ((x-512)**2 + (y-661)**2)**0.5
+            dist_from_cam = (((x-512)**2 + (y-661)**2)**0.5) / 10
             heightError_func = lambda dist: (1.8/-270)*dist + 6.8
             posError_func = lambda dist: ((60-5)/836**2) * dist**2 + 5
             aspectError_func = lambda dist: 0.030

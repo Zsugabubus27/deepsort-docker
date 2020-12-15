@@ -200,8 +200,12 @@ def runOneCombination(fps = 6, resolution = (2560, 1440), lambdaParam  = 1.0, ma
 
 
 if __name__ == "__main__":
-	FPS = 6
-	for lambdaP in np.arange(0.0, 1.1, 0.25):
-		for maxAgeSec in [1, 2, 3]:
-			for nnBudgetSec in [1, 3, 5]:
-				runOneCombination(fps=FPS, lambdaParam=lambdaP, max_age=FPS*maxAgeSec, nn_budget=nnBudgetSec*FPS)
+	# FPS = 6
+	# for lambdaP in np.arange(0.0, 1.1, 0.25):
+	# 	for maxAgeSec in [1, 2, 3]:
+	# 		for nnBudgetSec in [1, 3, 5]:
+	# 			runOneCombination(fps=FPS, lambdaParam=lambdaP, max_age=FPS*maxAgeSec, nn_budget=nnBudgetSec*FPS)
+
+	runOneCombination(fps=6, lambdaParam=1.0, max_age=12, nn_budget=18)
+	runOneCombination(fps=6, lambdaParam=0.75, max_age=12, nn_budget=18)
+	runOneCombination(fps=6, lambdaParam=0.5, max_age=12, nn_budget=18)
