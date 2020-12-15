@@ -1,6 +1,9 @@
 # Deep Sort with PyTorch 
 ### Detectron2 version of [DeepSORT PyTorch](https://github.com/ZQPei/deep_sort_pytorch)
 
+docker run --gpus all -it --volume=/home/dobreff/videos:/mnt deepsort-docker:latest /bin/bash
+docker run --gpus all -it --volume=/home/dobreff/videos:/mnt deepsort-docker:latest python3 track_deepsort_gpu.py
+
 ### Demo
 1. Clone this repository: `git clone --recurse-submodules https://github.com/Zsugabubus27/detectron2-deepsort-pytorch.git`
 2. Install torch!

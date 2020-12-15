@@ -40,8 +40,12 @@ class KalmanFilterWorldCoordinate(object):
         for i in range(ndim):
             self._motion_mat[i, ndim + i] = dt
         self._update_mat = np.eye(ndim, 2 * ndim)
+        
         # TODO: Change path according to input
-        self.errorDf = pd.read_csv('/home/dobreff/work/Dipterv/MLSA20/vendeg_elorol_position_error_binned.csv')
+        try:
+            self.errorDf = pd.read_csv('/home/dobreff/work/Dipterv/MLSA20/vendeg_elorol_position_error_binned.csv')
+        except FileNotFoundError:
+            print('Kalmanfilter errorDf not found!')
         self.posError_coeff = 1
         self.aspectError_coeff = 2.5
         self.heighError_coeff = 2.5

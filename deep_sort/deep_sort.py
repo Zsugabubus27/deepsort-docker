@@ -33,7 +33,8 @@ class DeepSort(object):
 				track state is set to `Deleted` if a miss occurs within the first
 				`n_init` frames.
 			lambdaParam : int
-				TODO
+				Ha 1 -> KF alapú
+				Ha 0 -> kép alapú
 			max_dist : int
 				Appearance feature vectorok távolságának maximuma.
 				Minden trackhez kiszámoljuk, hogy a detekciók közül melyik hasonlít rá a legjobban.
