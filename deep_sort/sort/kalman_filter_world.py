@@ -30,7 +30,7 @@ class KalmanFilterWorldCoordinate(object):
 
     """
 
-    def __init__(self):
+    def __init__(self, fps):
         ndim, dt = 4, 1.
 
         # Create Kalman filter model matrices.
@@ -49,7 +49,8 @@ class KalmanFilterWorldCoordinate(object):
         self.posError_coeff = 1
         self.aspectError_coeff = 2.5
         self.heighError_coeff = 2.5
-        self.velocityError_coeff = 1 / 6
+        self.fps = fps
+        self.velocityError_coeff = 1 / self.fps
         self.inputVideo = 'CSG'
 
         # Motion and observation uncertainty are chosen relative to the current

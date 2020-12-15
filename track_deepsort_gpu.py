@@ -37,7 +37,7 @@ class Detector(object):
 		self.deepsort = DeepSort(model_path=model_path, lambdaParam=lambdaParam, coordMapper=self.myCoordMapper, 
 						max_dist=max_dist, min_confidence=min_confidence, nms_max_overlap=nms_max_overlap, 
 						max_iou_distance=max_iou_distance, max_age=max_age, n_init=n_init, nn_budget=nn_budget, 
-						use_cuda=self._use_cuda, resolution = (self.resolution[0] * 2, self.resolution[1]))
+						use_cuda=self._use_cuda, resolution = (self.resolution[0] * 2, self.resolution[1]), fps=self.fps)
 
 
 	def initVideoOutput(self):
@@ -53,7 +53,7 @@ class Detector(object):
 		fourcc = cv2.VideoWriter_fourcc(*'XVID')
 		self.output = cv2.VideoWriter(self.output_video_path, fourcc, self.fps, (self.out_vid_width, self.out_vid_height))
 
-	def writeVideoOutput(self, frameNum, list_detections, tracks, draw_detections=False, draw_tracks=True):
+	def writeVideoOutput(self, frameNum, list_detections, tracks, draw_detections=True, draw_tracks=True):
 		if self.input_images_dir is None or self.output_video_path is None:
 			return
 		# Beolvasom a megfelelő képkockát
@@ -205,7 +205,7 @@ if __name__ == "__main__":
 	# 	for maxAgeSec in [1, 2, 3]:
 	# 		for nnBudgetSec in [1, 3, 5]:
 	# 			runOneCombination(fps=FPS, lambdaParam=lambdaP, max_age=FPS*maxAgeSec, nn_budget=nnBudgetSec*FPS)
-
-	runOneCombination(fps=6, lambdaParam=1.0, max_age=12, nn_budget=18)
-	runOneCombination(fps=6, lambdaParam=0.75, max_age=12, nn_budget=18)
-	runOneCombination(fps=6, lambdaParam=0.5, max_age=12, nn_budget=18)
+	FPS = 15
+	runOneCombination(fps=FPS, lambdaParam=1.0, max_age=12, nn_budget=18)
+	runOneCombination(fps=FPS, lambdaParam=0.75, max_age=12, nn_budget=18)
+	runOneCombination(fps=FPS, lambdaParam=0.5, max_age=12, nn_budget=18)

@@ -11,7 +11,7 @@ __all__ = ['DeepSort']
 
 
 class DeepSort(object):
-	def __init__(self, model_path, lambdaParam, coordMapper, resolution, max_dist=0.2, min_confidence=0.3, 
+	def __init__(self, model_path, lambdaParam, coordMapper, resolution, fps, max_dist=0.2, min_confidence=0.3, 
 				nms_max_overlap=1.0, max_iou_distance=0.7, max_age=70, n_init=3, nn_budget=100, use_cuda=True):
 		'''
 			Parameters
@@ -62,7 +62,7 @@ class DeepSort(object):
 		Lk = nn_budget
 		metric = NearestNeighborDistanceMetric("cosine", max_cosine_distance, lambdaParam,Lk)
 		self.tracker = Tracker(metric, lambdaParam=lambdaParam, max_iou_distance=max_iou_distance,
-								 max_age=max_age, n_init=n_init, coordMapper=coordMapper)
+								 max_age=max_age, n_init=n_init, coordMapper=coordMapper, fps=fps)
 
 	def update(self, bbox_xywh, confidences, bbox_imgs, worldCoordXY):
 		'''

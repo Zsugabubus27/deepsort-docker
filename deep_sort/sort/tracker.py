@@ -37,7 +37,7 @@ class Tracker:
 
 	"""
 
-	def __init__(self, metric, lambdaParam, max_iou_distance, max_age, n_init, coordMapper):
+	def __init__(self, metric, lambdaParam, max_iou_distance, max_age, n_init, coordMapper, fps):
 		self.metric = metric
 		self.max_iou_distance = max_iou_distance
 		self.max_age = max_age
@@ -46,7 +46,7 @@ class Tracker:
 		self.coordMapper = coordMapper
 
 		#self.kf = kalman_filter.KalmanFilter()
-		self.kf = kalman_filter_world.KalmanFilterWorldCoordinate()
+		self.kf = kalman_filter_world.KalmanFilterWorldCoordinate(fps=fps)
 		self.tracks = []
 		self._next_id = 1
 
