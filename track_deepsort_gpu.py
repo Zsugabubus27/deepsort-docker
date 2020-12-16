@@ -160,7 +160,7 @@ class Detector(object):
 
 		# Létrehozom a BBoxokat, átalakítva, úgy hogy cX, cY, W, H legyen
 		# FONTOS: Mivel ki fogom plotolni ezért a kisképen lévő bboxok kellenek
-		bbox_xcycwh = [det['box'] for det in list_of_detections]
+		bbox_xcycwh = [det['bigBox'] for det in list_of_detections]
 		bbox_xcycwh = [[(xBR + xTL) / 2, (yBR + yTL) / 2, (xBR - xTL), (yBR - yTL) ] for xTL, yTL, xBR, yBR in bbox_xcycwh]
 		cls_conf = [det['score'] for det in list_of_detections]
 		bbox_imgs = [det['image'] for det in list_of_detections]
@@ -197,7 +197,8 @@ def runOneCombination(fps = 6, resolution = (2560, 1440), lambdaParam  = 1.0, ma
 
 	detections_file = f'/mnt/outputs/{resolution[0]}_30fps/detections_v4.pickle'
 	output_result_path = f'/mnt/outputs/{resolution[0]}_30fps/results/{resolution[0]}@fps={fps}@lambda={lambdaParam}@maxage={max_age}@nnbudget={nn_budget}.csv'
-	if True:
+	
+	if video_output:
 		output_video_path = f'/mnt/outputs/{resolution[0]}_30fps/results/{resolution[0]}@fps={fps}@lambda={lambdaParam}@maxage={max_age}@nnbudget={nn_budget}.avi' 
 	else:
 		output_video_path = None
@@ -222,9 +223,9 @@ if __name__ == "__main__":
 
 	list_combinations = list(product(list_resolution, list_fps, list_lambda, list_maxAgeSec, list_nnbudget))
 	print(len(list_combinations))
-	for actResolution, actFps, actLambda, actMaxAge, actNNBudget) in list_combinations:
-		runOneCombination(resolution=actResolution, fps=actFps, lambdaParam=actLambda, 
-							max_age=actFps*actMaxAge, nn_budget=actNNBudget*actFps, early_stopping=None)
+	# for actResolution, actFps, actLambda, actMaxAge, actNNBudget) in list_combinations:
+	# 	runOneCombination(resolution=actResolution, fps=actFps, lambdaParam=actLambda, 
+	# 						max_age=actFps*actMaxAge, nn_budget=actNNBudget*actFps, early_stopping=None)
 	# FPS = 6
 	# for lambdaP in np.arange(0.0, 1.1, 0.25):
 	# 	for maxAgeSec in [1, 2, 3]:
@@ -234,5 +235,7 @@ if __name__ == "__main__":
 	# runOneCombination(fps=FPS, lambdaParam=1.0, max_age=FPS*2, nn_budget=FPS*3)
 	# FPS = 6
 	# runOneCombination(fps=FPS, lambdaParam=1.0, max_age=FPS*2, nn_budget=FPS*3)
+	FPS = 6
+	runOneCombination(resolution=(1280, 720), fps=FPS, lambdaParam=1.0, max_age=FPS*2, nn_budget=FPS*3, video_output=True)
 	# runOneCombination(fps=FPS, lambdaParam=0.75, max_age=12, nn_budget=18)
 	# runOneCombination(fps=FPS, lambdaParam=0.5, max_age=12, nn_budget=18)
