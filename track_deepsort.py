@@ -36,7 +36,7 @@ class Detector(object):
 		self.deepsort = DeepSort(model_path=model_path, lambdaParam=lambdaParam, coordMapper=self.myCoordMapper, 
 						max_dist=max_dist, min_confidence=min_confidence, nms_max_overlap=nms_max_overlap, 
 						max_iou_distance=max_iou_distance, max_age=max_age, n_init=n_init, nn_budget=nn_budget, 
-						use_cuda=self._use_cuda, resolution = (self.resolution[0] * 2, self.resolution[1]))
+						use_cuda=self._use_cuda, resolution = (self.resolution[0] * 2, self.resolution[1]), fps=self.fps)
 
 
 	def initVideoOutput(self):
@@ -65,11 +65,15 @@ class Detector(object):
 		all1 = [None]*len(bb_xyxy)
 		img = draw_bboxes(img, bb_xyxy, all1)
 
+		#print(list_detections[10]['box'], list_detections[10]['bigBox'], list_detections[10]['worldXY'], '\n\n\n')
+
+		resizeFactor = self.resolution[0] / 2560
+		#print([x for x in tracks if x[4] == 1])
 		# Trackeket rajzolok rá
-		# if len(tracks) > 0 and False: # TODO:
-		# 	bbox_xyxy = tracks[:, :4]
-		# 	identities = tracks[:, 4]
-		# 	img = draw_bboxes(img, bbox_xyxy, identities)
+		if len(tracks) > 0 and True: # TODO:
+			bbox_xyxy = tracks[:, :4] * resizeFactor
+			identities = tracks[:, 4]
+			img = draw_bboxes(img, bbox_xyxy, identities)
 
 		self.out_vid_height, self.out_vid_width
 		# Frame Numbert is felrajzolom
@@ -142,13 +146,14 @@ class Detector(object):
 
 		# Létrehozom a BBoxokat, átalakítva, úgy hogy cX, cY, W, H legyen
 		# FONTOS: Mivel ki fogom plotolni ezért a kisképen lévő bboxok kellenek
-		bbox_xcycwh = [det['box'] for det in list_of_detections]
+		bbox_xcycwh = [det['bigBox'] for det in list_of_detections]
 		bbox_xcycwh = [[(xBR + xTL) / 2, (yBR + yTL) / 2, (xBR - xTL), (yBR - yTL) ] for xTL, yTL, xBR, yBR in bbox_xcycwh]
 		cls_conf = [det['score'] for det in list_of_detections]
 		bbox_imgs = [det['image'] for det in list_of_detections]
 		worldCoordXY = [det['worldXY'] for det in list_of_detections]
 
 		outputs, deadtracks = self.deepsort.update(bbox_xcycwh, cls_conf, bbox_imgs, worldCoordXY)
+		print(len(outputs), len(deadtracks))
 
 		self.writeVideoOutput(frameNum, list_of_detections, outputs)
 		
@@ -190,14 +195,14 @@ if __name__ == "__main__":
 	min_confidence = 0.0 # Fölösleges, mert a detekció során már megcsináltam
 	nms_max_overlap = 1.1 # Fölösleges, mert már a detekció során mindent kiszűrtem
 	max_iou_distance = 0.7
-	max_age = 10*3 # FPS*3
+	max_age = 6*2 # FPS*3
 	n_init = 3
-	nn_budget = 50
+	nn_budget = 6*3
 
 	# Mérési paraméterek
-	early_stopping = 30*60 # sec * 60FPS
-	fps = 10
-	resolution = (2560, 1440) # TODO: Okossabban 
+	early_stopping = 5*60 # sec * 60FPS
+	fps = 6
+	resolution = (1280, 720) # TODO: Okossabban  (1280, 720)
 	detections_file = f'/mnt/match_videos/dobreff/detections/{resolution[0]}_30fps/detections_v4.pickle' # TODO: Okosabban
 	output_video_path = f'/mnt/match_videos/dobreff/outputs/{resolution[0]}_{fps}.avi' 
 	output_result_path = f'/mnt/match_videos/dobreff/outputs/{resolution[0]}_{fps}.csv'

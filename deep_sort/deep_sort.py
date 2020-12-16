@@ -135,9 +135,10 @@ class DeepSort(object):
 		'''
 		x,y,w,h = bbox_xywh
 		x1 = max(int(x-w/2),0)
-		x2 = min(int(x+w/2),self.width-1)
+		# Mivel 5120x1440-es bigBoxokat nézek
+		x2 = min(int(x+w/2),5120-1)  # min(int(x+w/2),self.width-1)
 		y1 = max(int(y-h/2),0)
-		y2 = min(int(y+h/2),self.height-1)
+		y2 = min(int(y+h/2),1440-1) #min(int(y+h/2),self.height-1)
 		return x1,y1,x2,y2
 	
 	def _tlwh_to_footXY(self, bbox_tlwh):
@@ -158,9 +159,10 @@ class DeepSort(object):
 		"""
 		x,y,w,h = bbox_tlwh
 		x1 = max(int(x),0)
-		x2 = min(int(x+w),self.width-1)
+		# Mivel 5120x1440-es bigBoxokat nézek
+		x2 = min(int(x+w),5120-1)
 		y1 = max(int(y),0)
-		y2 = min(int(y+h),self.height-1)
+		y2 = min(int(y+h),1440-1)
 		return x1,y1,x2,y2
 
 	def _xyxy_to_tlwh(self, bbox_xyxy):
