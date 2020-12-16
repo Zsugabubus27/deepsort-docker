@@ -70,20 +70,21 @@ class Detector(object):
 			all1 = [None]*len(bb_xyxy)
 			img = draw_bboxes(img, bb_xyxy, all1)
 
+		resizeFactor = self.resolution[0] / 2560
 
 		# Trackeket rajzolok rá
 		if len(tracks) > 0 and draw_tracks:
-			bbox_xyxy = tracks[:, :4]
+			bbox_xyxy = tracks[:, :4] * resizeFactor
 			identities = tracks[:, 4]
 			img = draw_bboxes(img, bbox_xyxy, identities)
 
 		# Draw boxes for dead tracks for debugging
 		if len(deadtracks) > 0 and draw_deadtracks:
 			bbox_xyxy = [x[:4] for x in deadtracks]
+			bbox_xyxy = [x * resizeFactor for x in bbox_xyxy]
 			labels = [x[4] for x in deadtracks]
 			img = draw_dead_bboxes(img, bbox_xyxy, labels)
 
-		self.out_vid_height, self.out_vid_width
 		# Frame Numbert is felrajzolom
 		img = draw_frameNum(img, (self.out_vid_width // 2, self.out_vid_height // 10), frameNum)
 		
