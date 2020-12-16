@@ -12,6 +12,7 @@ import pickle
 
 import natsort
 import glob
+from itertools import product
 
 class Detector(object):
 	def __init__(self, detections_file : str, resolution : tuple, fps : int, input_images_dir : str, 
@@ -53,9 +54,11 @@ class Detector(object):
 		fourcc = cv2.VideoWriter_fourcc(*'XVID')
 		self.output = cv2.VideoWriter(self.output_video_path, fourcc, self.fps, (self.out_vid_width, self.out_vid_height))
 
-	def writeVideoOutput(self, frameNum, list_detections, tracks, draw_detections=True, draw_tracks=True):
+	def writeVideoOutput(self, frameNum, list_detections, tracks, deadtracks, 
+							draw_detections=True, draw_tracks=True, draw_deadtracks=True):
 		if self.input_images_dir is None or self.output_video_path is None:
 			return
+		
 		# Beolvasom a megfelelő képkockát
 		img = cv2.imread(self.dict_frame2path[frameNum])
 		# Resizeolom
@@ -74,6 +77,12 @@ class Detector(object):
 			identities = tracks[:, 4]
 			img = draw_bboxes(img, bbox_xyxy, identities)
 
+		# Draw boxes for dead tracks for debugging
+		if len(deadtracks) > 0 and draw_deadtracks:
+			bbox_xyxy = [x[:4] for x in deadtracks]
+			labels = [x[4] for x in deadtracks]
+			img = draw_dead_bboxes(img, bbox_xyxy, labels)
+
 		self.out_vid_height, self.out_vid_width
 		# Frame Numbert is felrajzolom
 		img = draw_frameNum(img, (self.out_vid_width // 2, self.out_vid_height // 10), frameNum)
@@ -86,14 +95,15 @@ class Detector(object):
 			return
 		self.output.release()
 	
-	def writeResults(self, frameNum, tracks):
+	def writeResults(self, frameNum, tracks, ts_start, ts_end):
 		'''
 		tracks : np.array = List[ [x1, y1, x2, y2, tID, xWorld, yWorld] ]
 		'''
 		if len(tracks) == 0:
 			return
 		
-		list_tracks = [ {'frame' : frameNum, 'xTL' : xTL, 'yTL' : yTL, 'xBR' : xBR, 
+		list_tracks = [ {'frame' : frameNum, 'ts_start' : ts_start, 'ts_end' : ts_end, 
+							'xTL' : xTL, 'yTL' : yTL, 'xBR' : xBR, 
 							'yBR' : yBR, 'tID' : tID, 'xWorld' : xWorld, 'yWorld' : yWorld}
 						for xTL, yTL, xBR, yBR, tID, xWorld, yWorld
 						in tracks
@@ -146,6 +156,8 @@ class Detector(object):
 								]
 		'''
 
+		ts_start = time.time()
+
 		# Létrehozom a BBoxokat, átalakítva, úgy hogy cX, cY, W, H legyen
 		# FONTOS: Mivel ki fogom plotolni ezért a kisképen lévő bboxok kellenek
 		bbox_xcycwh = [det['box'] for det in list_of_detections]
@@ -156,21 +168,23 @@ class Detector(object):
 
 		outputs, deadtracks = self.deepsort.update(bbox_xcycwh, cls_conf, bbox_imgs, worldCoordXY)
 
-		self.writeVideoOutput(frameNum, list_of_detections, outputs)
+		ts_end = time.time()
+
+		self.writeVideoOutput(frameNum, list_of_detections, outputs, deadtracks)
 		
-		self.writeResults(frameNum, outputs)
+		self.writeResults(frameNum, outputs, ts_start, ts_end)
 
 		# TODO: Save results to file
 		# Úgy ahogy a workernél a pandasos mókát csináltam
 
 
-def runOneCombination(fps = 6, resolution = (2560, 1440), lambdaParam  = 1.0, max_age=12, nn_budget = 50, early_stopping = 1800):
+def runOneCombination(fps = 6, resolution = (2560, 1440), lambdaParam  = 1.0, max_age=12, nn_budget = 50, early_stopping = 1800, video_output=False):
 		# Konstans paraméterek
 	model_path = '/mnt/ckpt.t7'
 	input_images_dir = '/mnt/images/*.jpg'
 	
 	# Mérési paraméterek
-	#early_stopping = 30*60 # sec * 60FPS
+	# early_stopping = 30*60 # sec * 60FPS
 
 	# DeepSort paraméterek
 	use_cuda = True
@@ -200,12 +214,25 @@ def runOneCombination(fps = 6, resolution = (2560, 1440), lambdaParam  = 1.0, ma
 
 
 if __name__ == "__main__":
+	list_resolution = [(2560, 1440), (2048, 1152), (1920, 1080), (1536, 864), (1280, 720)]
+	list_fps = [30, 15, 10, 6]
+	list_lambda = list(np.arange(0.0, 1.1, 0.25))
+	list_maxAgeSec = [1, 2, 3]
+	list_nnbudget = [1, 3, 5]
+
+	list_combinations = list(product(list_resolution, list_fps, list_lambda, list_maxAgeSec, list_nnbudget))
+	print(len(list_combinations))
+	for actResolution, actFps, actLambda, actMaxAge, actNNBudget) in list_combinations:
+		runOneCombination(resolution=actResolution, fps=actFps, lambdaParam=actLambda, 
+							max_age=actFps*actMaxAge, nn_budget=actNNBudget*actFps, early_stopping=None)
 	# FPS = 6
 	# for lambdaP in np.arange(0.0, 1.1, 0.25):
 	# 	for maxAgeSec in [1, 2, 3]:
 	# 		for nnBudgetSec in [1, 3, 5]:
 	# 			runOneCombination(fps=FPS, lambdaParam=lambdaP, max_age=FPS*maxAgeSec, nn_budget=nnBudgetSec*FPS)
-	FPS = 15
-	runOneCombination(fps=FPS, lambdaParam=1.0, max_age=12, nn_budget=18)
-	runOneCombination(fps=FPS, lambdaParam=0.75, max_age=12, nn_budget=18)
-	runOneCombination(fps=FPS, lambdaParam=0.5, max_age=12, nn_budget=18)
+	# FPS = 15
+	# runOneCombination(fps=FPS, lambdaParam=1.0, max_age=FPS*2, nn_budget=FPS*3)
+	# FPS = 6
+	# runOneCombination(fps=FPS, lambdaParam=1.0, max_age=FPS*2, nn_budget=FPS*3)
+	# runOneCombination(fps=FPS, lambdaParam=0.75, max_age=12, nn_budget=18)
+	# runOneCombination(fps=FPS, lambdaParam=0.5, max_age=12, nn_budget=18)

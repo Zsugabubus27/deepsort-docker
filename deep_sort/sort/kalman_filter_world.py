@@ -46,12 +46,14 @@ class KalmanFilterWorldCoordinate(object):
             self.errorDf = pd.read_csv('/home/dobreff/work/Dipterv/MLSA20/vendeg_elorol_position_error_binned.csv')
         except FileNotFoundError:
             print('Kalmanfilter errorDf not found!')
-        self.posError_coeff = 1
-        self.aspectError_coeff = 2.5
-        self.heighError_coeff = 2.5
         self.fps = fps
-        self.velocityError_coeff = 1 / self.fps
+        fpsKompenzacio = ((6 / self.fps) ** 0.5)
+        self.posError_coeff = 1 * fpsKompenzacio
+        self.aspectError_coeff = 2.5 * fpsKompenzacio
+        self.heighError_coeff = 2.5  * fpsKompenzacio
+        self.velocityError_coeff = (1 / 6) * fpsKompenzacio
         self.inputVideo = 'CSG'
+        print(self.fps, self.posError_coeff, self.aspectError_coeff, self.velocityError_coeff)
 
         # Motion and observation uncertainty are chosen relative to the current
         # state estimate. These weights control the amount of uncertainty in
