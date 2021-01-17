@@ -81,7 +81,7 @@ class Detector(object):
 		# Draw boxes for dead tracks for debugging
 		if len(deadtracks) > 0 and draw_deadtracks:
 			bbox_xyxy = [x[:4] for x in deadtracks]
-			bbox_xyxy = [x * resizeFactor for x in bbox_xyxy]
+			bbox_xyxy = [np.array(c) * resizeFactor for c in bbox_xyxy]
 			labels = [x[4] for x in deadtracks]
 			img = draw_dead_bboxes(img, bbox_xyxy, labels)
 
@@ -141,7 +141,10 @@ class Detector(object):
 			# Leszűröm csak a hazai detekciókat
 			list_dets = [x for x in dict_detections[frameNum] if x['team'] in ['red']]
 			print('Frame', frameNum)
-			self.doTrackingForOneFrame(frameNum, list_dets)
+			
+			# Mivel leszűröm piros játékosokra ezért lehet hogy nulla játékos lesz
+			if len(list_dets) > 0:
+				self.doTrackingForOneFrame(frameNum, list_dets)
 			
 			if self.early_stopping is not None and frameNum >= self.early_stopping:
 				break
@@ -216,17 +219,18 @@ def runOneCombination(fps = 6, resolution = (2560, 1440), lambdaParam  = 1.0, ma
 
 
 if __name__ == "__main__":
-	list_resolution = [(2560, 1440), (2048, 1152), (1920, 1080), (1536, 864), (1280, 720)]
+	list_resolution = [(2048, 1152), (1920, 1080), (1536, 864), (1280, 720)]
 	list_fps = [30, 15, 10, 6]
-	list_lambda = list(np.arange(0.0, 1.1, 0.25))
+	list_lambda = list(np.arange(0.0, 1.1, 0.33))
 	list_maxAgeSec = [1, 2, 3]
 	list_nnbudget = [1, 3, 5]
 
 	list_combinations = list(product(list_resolution, list_fps, list_lambda, list_maxAgeSec, list_nnbudget))
 	print(len(list_combinations))
-	# for actResolution, actFps, actLambda, actMaxAge, actNNBudget) in list_combinations:
-	# 	runOneCombination(resolution=actResolution, fps=actFps, lambdaParam=actLambda, 
-	# 						max_age=actFps*actMaxAge, nn_budget=actNNBudget*actFps, early_stopping=None)
+	for actResolution, actFps, actLambda, actMaxAge, actNNBudget in list_combinations:
+		runOneCombination(resolution=actResolution, fps=actFps, lambdaParam=actLambda, 
+							max_age=actFps*actMaxAge, nn_budget=actNNBudget*actFps, 
+							early_stopping=None, video_output=False)
 	# FPS = 6
 	# for lambdaP in np.arange(0.0, 1.1, 0.25):
 	# 	for maxAgeSec in [1, 2, 3]:
@@ -236,7 +240,7 @@ if __name__ == "__main__":
 	# runOneCombination(fps=FPS, lambdaParam=1.0, max_age=FPS*2, nn_budget=FPS*3)
 	# FPS = 6
 	# runOneCombination(fps=FPS, lambdaParam=1.0, max_age=FPS*2, nn_budget=FPS*3)
-	FPS = 6
-	runOneCombination(resolution=(1280, 720), fps=FPS, lambdaParam=1.0, max_age=FPS*2, nn_budget=FPS*3, video_output=True)
+	# FPS = 6
+	# runOneCombination(resolution=(1280, 720), fps=FPS, lambdaParam=1.0, max_age=FPS*2, nn_budget=FPS*3, video_output=True)
 	# runOneCombination(fps=FPS, lambdaParam=0.75, max_age=12, nn_budget=18)
 	# runOneCombination(fps=FPS, lambdaParam=0.5, max_age=12, nn_budget=18)
